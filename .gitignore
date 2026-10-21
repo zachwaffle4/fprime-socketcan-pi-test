@@ -1,0 +1,11 @@
+build-fprime-automatic-*/
+build-artifacts/
+fprime-venv/
+logs/
+.fpp-lsp/
+.idea/
+.DS_Store
+__pycache__/
+*.pyc
+build-container-aarch64/
+cmake-build-*/

@@ -1,0 +1,6 @@
+[submodule "lib/fprime"]
+	path = lib/fprime
+	url = https://github.com/nasa/fprime.git
+[submodule "lib/fprime-socketcan"]
+	path = lib/fprime-socketcan
+	url = https://github.com/TeraLink-1/fprime-socketcan.git
