@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Add the Waveshare 2-CH CAN HAT (2x MCP2515) device-tree overlays to the Pi's
+# Add the Waveshare 2-CH CAN HAT+ (2x MCP2515 on SPI1) device-tree overlays to the Pi's
 # config.txt. Idempotent, and keeps a backup. Reboot afterward.
 #
-# The lines come from Waveshare's wiki (https://waveshare.com/wiki/2-CH_CAN_HAT).
-# The wiki says INT_0 is wired to GPIO23 and INT_1 to GPIO25, and 16 MHz crystals.
-# It does not give separate Pi 5 settings, only an FAQ answer that the HAT works on a Pi 5.
+# The lines come from Waveshare's wiki (https://www.waveshare.com/wiki/2-CH_CAN_HAT+).
+# The wiki says INT_0 is wired to GPIO22 and INT_1 to GPIO13 by default, and 16 MHz crystals.
+# Both controllers are on SPI1 (chip selects 1 and 2), hence the spi1-3cs overlay.
+# If you move the interrupt jumpers on the HAT, set INT_CAN0/INT_CAN1 to match.
 #
 # After the reboot, check what actually came up:
 #   dmesg | grep -i mcp251
@@ -14,8 +15,8 @@
 set -euo pipefail
 
 OSCILLATOR="${OSCILLATOR:-16000000}"
-INT_CAN0="${INT_CAN0:-23}"
-INT_CAN1="${INT_CAN1:-25}"
+INT_CAN0="${INT_CAN0:-22}"
+INT_CAN1="${INT_CAN1:-13}"
 
 CONFIG=""
 for candidate in /boot/firmware/config.txt /boot/config.txt; do
@@ -34,10 +35,16 @@ if [ "$(id -u)" -ne 0 ]; then
     SUDO="sudo"
 fi
 
-MARKER="# picantest: Waveshare 2-CH CAN HAT"
+MARKER="# picantest: Waveshare 2-CH CAN HAT+"
 if grep -qF "$MARKER" "$CONFIG"; then
     echo "$CONFIG already has the CAN overlay block; edit it by hand to change it."
     exit 0
+fi
+
+if grep -qF "# picantest: Waveshare 2-CH CAN HAT" "$CONFIG"; then
+    echo "$CONFIG has the older (non-HAT+) overlay block. Remove it by hand, or restore" >&2
+    echo "$CONFIG.picantest.bak, then re-run this script." >&2
+    exit 1
 fi
 
 BACKUP="$CONFIG.picantest.bak"
@@ -48,8 +55,10 @@ $SUDO tee -a "$CONFIG" >/dev/null <<EOF
 
 $MARKER
 dtparam=spi=on
-dtoverlay=mcp2515-can0,oscillator=$OSCILLATOR,interrupt=$INT_CAN0
-dtoverlay=mcp2515-can1,oscillator=$OSCILLATOR,interrupt=$INT_CAN1
+dtoverlay=i2c0
+dtoverlay=spi1-3cs
+dtoverlay=mcp2515,spi1-1,oscillator=$OSCILLATOR,interrupt=$INT_CAN0
+dtoverlay=mcp2515,spi1-2,oscillator=$OSCILLATOR,interrupt=$INT_CAN1
 EOF
 
 echo "Added the overlay block to $CONFIG. Reboot to apply: sudo reboot"

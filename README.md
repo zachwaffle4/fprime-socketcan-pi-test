@@ -1,7 +1,7 @@
 # fprime-socketcan Pi test bench
 
 Tests [fprime-socketcan](https://github.com/TeraLink-1/fprime-socketcan) (`SocketCan.LinuxCanDriver`)
-between two Raspberry Pi 5s, each with a Waveshare 2-CH CAN HAT (2x MCP2515).
+between two Raspberry Pi 5s, each with a Waveshare 2-CH CAN HAT+ (2x MCP2515).
 
 The same `PiCanTest` deployment runs on both Pis. A `CanTester` component sits on top of the driver
 and can ping, echo, and burst frames. You drive each Pi from its own GDS.
@@ -57,12 +57,13 @@ dmesg | grep -i mcp251
 ip -br link show type can        # expect can0 and can1
 ```
 
-`enable-can-overlay.sh` uses the lines from [Waveshare's wiki](https://waveshare.com/wiki/2-CH_CAN_HAT):
-16 MHz oscillators, interrupts on GPIO23 (channel 0) and GPIO25 (channel 1). The wiki gives no
-separate Pi 5 settings, only an FAQ answer that the HAT works on a Pi 5, so **treat the overlay as
+`enable-can-overlay.sh` uses the lines from [Waveshare's 2-CH CAN HAT+ wiki](https://www.waveshare.com/wiki/2-CH_CAN_HAT+):
+`spi1-3cs` plus one `mcp2515` overlay per channel (`spi1-1` and `spi1-2`), 16 MHz oscillators,
+interrupts on GPIO22 (channel 0) and GPIO13 (channel 1). Those are the HAT's default interrupt
+pins; if you move them in hardware, override `INT_CAN0`/`INT_CAN1`. **Treat the overlay as
 unverified on your hardware** until `dmesg` shows both controllers. The `can0`/`can1` names are
 assigned in probe order, so confirm which physical channel is which with `can-sanity.sh`.
-Override `OSCILLATOR`, `INT_CAN0`, `INT_CAN1` in the environment if your board differs.
+`OSCILLATOR` can be overridden the same way.
 
 ## 3. Check the bus without F´
 
